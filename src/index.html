@@ -11,17 +11,17 @@
 <body>
   <!-- ============================================================
        后端地址配置
-       这里的值会覆盖 js/config.js 中的同名配置。
+       这里的值会覆盖 js/config.js 中的同名配置，两处都要改。
 
        本地开发：http://127.0.0.1:8000
-       部署之后：改成 Render 上后端服务的公网地址
+       线上部署：https://eight32401325-calculator-backend.onrender.com
 
        超时保留 60 秒是为了适配 Render 免费实例的冷启动
        （30~50 秒），设短了会误报「请求超时」。
        ============================================================ -->
   <script>
     window.CALCULATOR_CONFIG = {
-      apiBaseUrl: 'http://127.0.0.1:8000',
+      apiBaseUrl: 'https://eight32401325-calculator-backend.onrender.com',
       requestTimeoutMs: 60000
     };
   </script>

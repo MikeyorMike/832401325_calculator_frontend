@@ -1,12 +1,11 @@
 /**
  * 前端配置。
  *
- * 部署后只需修改 apiBaseUrl 一处：
+ * apiBaseUrl 指向后端 API 的地址：
  *   本地开发  http://127.0.0.1:8000
- *   线上部署  https://<你的后端服务名>.onrender.com
+ *   线上部署  https://eight32401325-calculator-backend.onrender.com
  *
- * 也可以在 index.html 中用 window.CALCULATOR_CONFIG 覆盖，便于同一份代码
- * 部署到不同环境而不必改动源码。
+ * 注意：index.html 中的内联配置会覆盖本文件，两处都要改。
  */
 (function (global) {
   'use strict';
@@ -15,7 +14,7 @@
 
   global.CALCULATOR_CONFIG = {
     // 后端 API 根地址（不要以 / 结尾）
-    apiBaseUrl: existing.apiBaseUrl || 'http://127.0.0.1:8000',
+    apiBaseUrl: existing.apiBaseUrl || 'https://eight32401325-calculator-backend.onrender.com',
 
     // 单次请求超时时间（毫秒）
     //
