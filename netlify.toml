@@ -1,0 +1,30 @@
+# Netlify 部署配置
+#
+# 本文件让 Netlify 自动识别这是一个静态站点，无需构建步骤。
+# 用法：Netlify → Add new site → Import an existing project → 选中本仓库，
+#       配置会自动读取本文件，直接点 Deploy 即可。
+
+[build]
+  # 前端源码在 src 子目录，且无需构建，因此发布目录就是 src
+  publish = "src"
+  # 纯静态项目，留空表示不执行构建命令
+  command = ""
+
+# 安全响应头
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "DENY"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# 静态资源缓存策略：CSS/JS 变更后需要及时生效，因此设置较短的缓存时间
+[[headers]]
+  for = "/*.css"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="前后端分离计算器系统">
+  <title>计算器系统 | 前后端分离</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧮</text></svg>">
+</head>
+<body>
+  <!-- ============================================================
+       后端地址配置
+       这里的值会覆盖 js/config.js 中的同名配置。
+
+       本地开发：http://127.0.0.1:8000
+       部署之后：改成 Render 上后端服务的公网地址
+
+       超时保留 60 秒是为了适配 Render 免费实例的冷启动
+       （30~50 秒），设短了会误报「请求超时」。
+       ============================================================ -->
+  <script>
+    window.CALCULATOR_CONFIG = {
+      apiBaseUrl: 'http://127.0.0.1:8000',
+      requestTimeoutMs: 60000
+    };
+  </script>
+
+  <div class="app">
+    <!-- ---------------- 顶部栏 ---------------- -->
+    <header class="app-header">
+      <div class="app-header__brand">
+        <div class="app-header__logo" aria-hidden="true">🧮</div>
+        <div>
+          <h1 class="app-header__title">前后端分离计算器系统</h1>
+          <p class="app-header__subtitle">
+            表达式解析 · 计算历史 · 科学计算 · 进制与单位换算
+          </p>
+        </div>
+      </div>
+
+      <div class="app-header__actions">
+        <div class="status-badge" id="backendStatus" data-state="pending">
+          <span class="status-badge__dot"></span>
+          <span class="status-badge__text">检测后端…</span>
+        </div>
+        <button class="icon-button" id="themeToggle" type="button" title="切换主题">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M19 5l-1.5 1.5M6.5 17.5L5 19"></path>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- ---------------- 主体：左计算器 / 右历史 ---------------- -->
+    <main class="app-main">
+      <!-- ========== 左侧：计算器 ========== -->
+      <section class="panel calculator" aria-label="计算器">
+        <!-- 模式切换 -->
+        <div class="mode-tabs" role="tablist">
+          <button class="mode-tab is-active" data-mode="standard" role="tab" type="button">标准</button>
+          <button class="mode-tab" data-mode="scientific" role="tab" type="button">科学</button>
+          <button class="mode-tab" data-mode="base" role="tab" type="button">进制</button>
+          <button class="mode-tab" data-mode="unit" role="tab" type="button">单位</button>
+        </div>
+
+        <!-- 显示屏 -->
+        <div class="display">
+          <label class="display__label" for="expressionInput">表达式</label>
+          <input
+            class="display__input"
+            id="expressionInput"
+            type="text"
+            inputmode="text"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="例如：(1+2)*3-4/2"
+            aria-describedby="displayHint">
+          <div class="display__result-row">
+            <span class="display__equals">=</span>
+            <output class="display__result" id="resultOutput">0</output>
+          </div>
+          <p class="display__hint" id="displayHint">
+            输入表达式后按 Enter 或点击「=」；后端会计算并自动保存到数据库
+          </p>
+        </div>
+
+        <!-- 标准键盘 -->
+        <div class="keypad" id="keypadStandard">
+          <button class="key key--function" data-action="clear" type="button">C</button>
+          <button class="key key--function" data-action="backspace" type="button">⌫</button>
+          <button class="key key--function" data-action="paren" type="button">( )</button>
+          <button class="key key--operator" data-value="/" type="button">÷</button>
+
+          <button class="key" data-value="7" type="button">7</button>
+          <button class="key" data-value="8" type="button">8</button>
+          <button class="key" data-value="9" type="button">9</button>
+          <button class="key key--operator" data-value="*" type="button">×</button>
+
+          <button class="key" data-value="4" type="button">4</button>
+          <button class="key" data-value="5" type="button">5</button>
+          <button class="key" data-value="6" type="button">6</button>
+          <button class="key key--operator" data-value="-" type="button">−</button>
+
+          <button class="key" data-value="1" type="button">1</button>
+          <button class="key" data-value="2" type="button">2</button>
+          <button class="key" data-value="3" type="button">3</button>
+          <button class="key key--operator" data-value="+" type="button">+</button>
+
+          <button class="key key--function" data-action="negate" type="button">±</button>
+          <button class="key" data-value="0" type="button">0</button>
+          <button class="key" data-value="." type="button">.</button>
+          <button class="key key--equals" data-action="calculate" type="button">=</button>
+        </div>
+
+        <!-- 科学计算键盘 -->
+        <div class="keypad keypad--scientific is-hidden" id="keypadScientific">
+          <button class="key key--sci" data-sci="sqrt" data-arity="1" type="button">√x</button>
+          <button class="key key--sci" data-sci="square" data-arity="1" type="button">x²</button>
+          <button class="key key--sci" data-sci="cube" data-arity="1" type="button">x³</button>
+          <button class="key key--sci" data-sci="power" data-arity="2" type="button">xʸ</button>
+
+          <button class="key key--sci" data-sci="reciprocal" data-arity="1" type="button">1/x</button>
+          <button class="key key--sci" data-sci="abs" data-arity="1" type="button">|x|</button>
+          <button class="key key--sci" data-sci="factorial" data-arity="1" type="button">n!</button>
+          <button class="key key--sci" data-sci="exp" data-arity="1" type="button">eˣ</button>
+
+          <button class="key key--sci" data-sci="log10" data-arity="1" type="button">log</button>
+          <button class="key key--sci" data-sci="ln" data-arity="1" type="button">ln</button>
+          <button class="key key--sci" data-sci="log2" data-arity="1" type="button">log₂</button>
+          <button class="key key--sci" data-sci="round" data-arity="1" type="button">round</button>
+
+          <button class="key key--sci" data-sci="sin" data-arity="1" type="button">sin</button>
+          <button class="key key--sci" data-sci="cos" data-arity="1" type="button">cos</button>
+          <button class="key key--sci" data-sci="tan" data-arity="1" type="button">tan</button>
+          <button class="key key--sci" data-sci="ceil" data-arity="1" type="button">⌈x⌉</button>
+        </div>
+
+        <!-- 进制转换面板 -->
+        <div class="tool-panel is-hidden" id="panelBase">
+          <div class="field">
+            <label for="baseValue">要转换的数值</label>
+            <input id="baseValue" type="text" placeholder="例如：255" autocomplete="off">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="baseFrom">源进制</label>
+              <select id="baseFrom">
+                <option value="10" selected>十进制</option>
+                <option value="2">二进制</option>
+                <option value="8">八进制</option>
+                <option value="16">十六进制</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="baseTo">目标进制</label>
+              <select id="baseTo">
+                <option value="2" selected>二进制</option>
+                <option value="8">八进制</option>
+                <option value="10">十进制</option>
+                <option value="16">十六进制</option>
+              </select>
+            </div>
+          </div>
+          <button class="button button--primary" data-action="convert-base" type="button">
+            转换
+          </button>
+        </div>
+
+        <!-- 单位换算面板 -->
+        <div class="tool-panel is-hidden" id="panelUnit">
+          <div class="field">
+            <label for="unitCategory">单位类别</label>
+            <select id="unitCategory">
+              <option value="length" selected>长度</option>
+              <option value="mass">质量</option>
+              <option value="area">面积</option>
+              <option value="temperature">温度</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="unitValue">数值</label>
+            <input id="unitValue" type="text" placeholder="例如：1.5" autocomplete="off">
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label for="unitFrom">源单位</label>
+              <select id="unitFrom"></select>
+            </div>
+            <div class="field">
+              <label for="unitTo">目标单位</label>
+              <select id="unitTo"></select>
+            </div>
+          </div>
+          <button class="button button--primary" data-action="convert-unit" type="button">
+            换算
+          </button>
+        </div>
+      </section>
+
+      <!-- ========== 右侧：历史与统计 ========== -->
+      <section class="panel history" aria-label="计算历史">
+        <div class="history__header">
+          <h2 class="panel__title">
+            计算历史
+            <span class="badge" id="historyTotal">0</span>
+          </h2>
+          <div class="history__header-actions">
+            <button class="icon-button icon-button--sm" id="refreshHistory"
+                    type="button" title="刷新历史">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M21 12a9 9 0 1 1-3-6.7"></path>
+                <path d="M21 3v6h-6"></path>
+              </svg>
+            </button>
+            <button class="icon-button icon-button--sm icon-button--danger"
+                    id="clearHistory" type="button" title="清空全部历史">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                <path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- 搜索与筛选 -->
+        <div class="history__toolbar">
+          <input class="search-input" id="historySearch" type="search"
+                 placeholder="搜索表达式或结果…" autocomplete="off">
+          <label class="checkbox">
+            <input type="checkbox" id="favoritesOnly">
+            <span>仅收藏</span>
+          </label>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="stats" id="statsPanel">
+          <div class="stats__item">
+            <span class="stats__value" id="statTotal">0</span>
+            <span class="stats__label">总记录</span>
+          </div>
+          <div class="stats__item">
+            <span class="stats__value" id="statToday">0</span>
+            <span class="stats__label">今日</span>
+          </div>
+          <div class="stats__item">
+            <span class="stats__value" id="statFavorites">0</span>
+            <span class="stats__label">收藏</span>
+          </div>
+        </div>
+
+        <!-- 历史列表 -->
+        <ul class="history__list" id="historyList"></ul>
+        <p class="empty-state is-hidden" id="historyEmpty">
+          暂无计算历史<br>
+          <span>在上方输入表达式并点击「=」，记录会保存到后端数据库</span>
+        </p>
+
+        <!-- 分页 -->
+        <div class="pagination is-hidden" id="pagination">
+          <button class="button button--ghost" id="prevPage" type="button">上一页</button>
+          <span class="pagination__info" id="pageInfo">第 1 / 1 页</span>
+          <button class="button button--ghost" id="nextPage" type="button">下一页</button>
+        </div>
+      </section>
+    </main>
+
+    <!-- ---------------- 页脚 ---------------- -->
+    <footer class="app-footer">
+      <span>接口地址：<code id="apiBaseLabel"></code></span>
+      <span class="app-footer__sep">·</span>
+      <span>API 文档：<a id="docsLink" href="#" target="_blank" rel="noopener">/docs</a></span>
+      <span class="app-footer__sep">·</span>
+      <span>键盘：数字 / + − * / / Enter 计算 / Esc 清空 / Backspace 退格</span>
+    </footer>
+  </div>
+
+  <!-- 提示条 -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
