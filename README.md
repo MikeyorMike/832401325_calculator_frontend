@@ -332,10 +332,15 @@ list.innerHTML += '<div>' + record.expression + '</div>';
 1. 修改 `src/js/config.js` 的 `apiBaseUrl` 为线上后端地址，**提交并推送**
 2. 访问 <https://app.netlify.com>，用 GitHub 账号登录
 3. **Add new site** → **Import an existing project** → 选择 GitHub 仓库
-4. 填写：Base directory = `src`，Build command 留空，Publish directory = `src`
+4. 填写构建设置：
+   - **Base directory：留空**（⚠️ 不要填 `src`，否则会与 `netlify.toml` 的 `publish = "src"` 叠加成 `src/src`，构建失败）
+   - **Build command：留空**（纯静态项目无需构建）
+   - **Publish directory：`src` 或留空**（`netlify.toml` 里已指定 `publish = "src"`）
 5. 点击 **Deploy site**，约 30 秒后得到公网地址
 
-> 仓库中已包含 `netlify.toml`，Netlify 会自动读取上述配置。
+> 仓库中已包含 `netlify.toml`，其中 `publish = "src"` 已指明发布目录，
+> 且配有一条 `[[redirects]]` 把未知路径回退到 `index.html`。
+> **界面上的 Base directory 必须留空**，否则路径会被拼接两次。
 
 ### 10.2 部署后必做
 

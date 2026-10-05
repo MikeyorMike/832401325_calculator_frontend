@@ -1,14 +1,25 @@
 # Netlify 部署配置
 #
-# 本文件让 Netlify 自动识别这是一个静态站点，无需构建步骤。
-# 用法：Netlify → Add new site → Import an existing project → 选中本仓库，
-#       配置会自动读取本文件，直接点 Deploy 即可。
+# ⚠️ 重要：本文件里的路径全部是「相对于仓库根目录」的。
+#    因此 Netlify 界面上的 **Base directory 必须留空**！
+#    如果在界面把 Base directory 填成 src，Netlify 会拼接成 src/src，
+#    构建直接失败（报错：Deploy directory 'src/src' does not exist）。
+#
+#    正确做法：界面 Base directory 留空，发布目录由本文件指定。
 
 [build]
   # 前端源码在 src 子目录，且无需构建，因此发布目录就是 src
+  # （相对仓库根目录，不要写成 src/src）
   publish = "src"
   # 纯静态项目，留空表示不执行构建命令
   command = ""
+
+# 单页应用友好：任何找不到的路径都回退到 index.html
+# 这样访问根路径 https://站点.netlify.app/ 一定能打开计算器
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
 
 # 安全响应头
 [[headers]]
